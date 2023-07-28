@@ -40,12 +40,12 @@ jobs: # 정의된 작업들
             --instance-ids i-071f4c8a16e0384ff \
             --document-name "AWS-RunShellScript" \
             --parameters "commands=[
-            'if sudo docker ps -a --format \\'{{.Names}}\\' | grep -q \'^server$\\'; then',
-            '  sudo docker stop server',
-            '  sudo docker rm server',
-            'fi',
-            'sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/spring-cicd:${GITHUB_SHA::7}',
-            'sudo docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/spring-cicd:${GITHUB_SHA::7} spring-cicd',
-            'sudo docker run -d --name server -p 8080:8080 spring-cicd'
+              'if sudo docker ps -a --format \\'{{.Names}}\\' | grep -q \'^server$\\'; then',
+              '  sudo docker stop server',
+              '  sudo docker rm server',
+              'fi',
+              'sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/spring-cicd:${GITHUB_SHA::7}',
+              'sudo docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/spring-cicd:${GITHUB_SHA::7} spring-cicd',
+              'sudo docker run -d --name server -p 8080:8080 spring-cicd'
            ]" \
            --output text
