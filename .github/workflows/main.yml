@@ -2,25 +2,25 @@ name: Java CI with Gradle
 
 on:
   push:
-    branches: [ main ] #push이벤트가 main브랜치에 발생하면 job에 정의된 작업을 실행
+    branches: [ main ]
 
-jobs: # 정의된 작업들
-  build: # 작업의 이름
+jobs:
+  build:
 
-    runs-on: ubuntu-latest #작업을 실행하는 머신의 운영체제, 최신버전의 우분투로 설정
+    runs-on: ubuntu-latest
 
-    steps: #작업의 수행단계 name과  run으로 구성
-      - uses: actions/checkout@v2 #Github Actions의 마켓플레이스에 등록된 작업 수행
-      - name: Set up JDK 11 #코드를 빌드하기위해 JDK설정, 점검
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
           java-version: '11'
           distribution: 'zulu'
-      - name: Grant execute permission for gradlew #코드를 gradle로 빌드
+      - name: Grant execute permission for gradlew
         run: chmod +x gradlew
       - name: Build with Gradle
         run: ./gradlew build
-      - name: Docker build #빌드완료된 jar파일을 이미지로 만들고 docker hub에 등록
+      - name: Docker build
         run: |
           docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }} 
           docker build -t spring-cicd . 
@@ -45,5 +45,5 @@ jobs: # 정의된 작업들
               'sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/spring-cicd:${GITHUB_SHA::7}',
               'sudo docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/spring-cicd:${GITHUB_SHA::7} spring-cicd',
               'sudo docker run -d --name server -p 8080:8080 spring-cicd'
-           ]" \
+            ]" \
            --output text
