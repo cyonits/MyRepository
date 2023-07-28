@@ -2,27 +2,56 @@ name: Java CI with Gradle
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main ] #push이벤트가 main브랜치에 발생하면 job에 정의된 작업을 실행
 
-jobs:
-  build:
+jobs: # 정의된 작업들
+  build: # 작업의 이름
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest #작업을 실행하는 머신의 운영체제, 최신버전의 우분투로 설정
 
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK 11
+    steps: #작업의 수행단계 name과  run으로 구성
+      - uses: actions/checkout@v2 #Github Actions의 마켓플레이스에 등록된 작업 수행
+      - name: Set up JDK 11 #코드를 빌드하기위해 JDK설정, 점검
         uses: actions/setup-java@v2
         with:
           java-version: '11'
           distribution: 'zulu'
-      - name: Grant execute permission for gradlew
+      - name: Grant execute permission for gradlew #코드를 gradle로 빌드
         run: chmod +x gradlew
       - name: Build with Gradle
         run: ./gradlew build
-      - name: Docker build
+      - name: Docker build #빌드완료된 jar파일을 이미지로 만들고 docker hub에 등록
         run: |
-          docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }}
+          docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} -p ${{ secrets.DOCKER_HUB_PASSWORD }} 
           docker build -t spring-cicd . 
           docker tag spring-cicd  ${{ secrets.DOCKER_HUB_USERNAME }}/spring-cicd:${GITHUB_SHA::7}
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/spring-cicd:${GITHUB_SHA::7} 
+        # 순서대로 docker에 로그인 > 이미지로 만듬 > 태그설정 > docker hub에 push이다.
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-2
+      - name: Start Session Manager session
+        run: aws ssm start-session --target i-071f4c8a16e0384ff
+      - name: Deploy to Server
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ap-northeast-2
+        run: |
+          aws ssm send-command \
+          --instance-ids i-071f4c8a16e0384ff \
+          --document-name "AWS-RunShellScript" \
+          --parameters "commands=[
+          'if sudo docker ps -a --format \\'{{.Names}}\\' | grep -q \'^server$\\'; then',
+          '  sudo docker stop server',
+          '  sudo docker rm server',
+          'fi',
+          'sudo docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/spring-cicd:${GITHUB_SHA::7}',
+          'sudo docker tag ${{ secrets.DOCKER_HUB_USERNAME }}/spring-cicd:${GITHUB_SHA::7} spring-cicd',
+          'sudo docker run -d --name server -p 8080:8080 spring-cicd'
+         ]" \
+         --output text
