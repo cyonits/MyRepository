@@ -26,7 +26,7 @@ jobs: # 정의된 작업들
           docker build -t spring-cicd . 
           docker tag spring-cicd  ${{ secrets.DOCKER_HUB_USERNAME }}/spring-cicd:${GITHUB_SHA::7}
           docker push ${{ secrets.DOCKER_HUB_USERNAME }}/spring-cicd:${GITHUB_SHA::7} 
-        # 순서대로 docker에 로그인 > 이미지로 만듬 > 태그설정 > docker hub에 push이다.
+        # 순서대로 docker에 로그인 > 이미지로 만듬 > 태그설정 > docker hub에 push이다..
 
       - name: Start Session Manager session
         run: aws ssm start-session --target i-071f4c8a16e0384ff
